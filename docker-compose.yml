@@ -1,0 +1,29 @@
+# Standalone compose for the FRONTEND repository (Nuxt 3 + Nitro BFF).
+# The frontend reaches the separately-deployed backend over the shared
+# `mafia-net` network, addressing it by container name.
+#
+# Create the shared network once (the backend repo uses the same one):
+#   docker network create mafia-net
+
+services:
+  frontend:
+    build:
+      context: .
+    image: mafia-frontend:latest
+    container_name: mafia-frontend
+    restart: unless-stopped
+    environment:
+      # Where the Nitro server routes proxy to. Override via CI/CD variable if
+      # the backend is reachable at a different address.
+      NUXT_BACKEND_API_URL: ${NUXT_BACKEND_API_URL:-http://mafia-backend:3000}
+      NITRO_HOST: 0.0.0.0
+      NITRO_PORT: 3000
+    ports:
+      - '${FRONTEND_PORT:-3001}:3000'
+    networks:
+      - mafia-net
+
+networks:
+  mafia-net:
+    name: mafia-net
+    external: true

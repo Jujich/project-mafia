@@ -1,0 +1,61 @@
+:root {
+  color-scheme: dark;
+}
+
+html,
+body,
+#__nuxt {
+  min-height: 100%;
+}
+
+body {
+  background: radial-gradient(
+      1100px 620px at 50% -12%,
+      #20337a 0%,
+      #152555 52%,
+      #101c44 100%
+    )
+    no-repeat fixed;
+  background-color: #152555;
+  color: #fbf5c7;
+  -webkit-font-smoothing: antialiased;
+  text-rendering: optimizeLegibility;
+}
+
+/* Premium serif look for headings / brand */
+.font-club {
+  font-family: Georgia, Cambria, 'Times New Roman', serif;
+  letter-spacing: 0.03em;
+}
+
+.text-gradient-gold {
+  background: linear-gradient(135deg, #fbf5c7 0%, #eee2b1 45%, #c9b673 100%);
+  -webkit-background-clip: text;
+  background-clip: text;
+  color: transparent;
+}
+
+.club-divider {
+  height: 1px;
+  background: linear-gradient(
+    90deg,
+    transparent,
+    rgba(159, 145, 107, 0.55),
+    transparent
+  );
+}
+
+/* Subtle gold ring used around the logo mark */
+.club-emblem {
+  background: linear-gradient(160deg, #1f2235, #152555);
+  box-shadow:
+    inset 0 0 0 1px rgba(238, 226, 177, 0.35),
+    0 12px 30px -12px rgba(0, 0, 0, 0.7);
+}
+
+/* Make number inputs feel large & tappable on mobile */
+input,
+select,
+button {
+  font-size: 16px;
+}

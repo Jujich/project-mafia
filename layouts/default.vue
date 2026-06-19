@@ -1,0 +1,65 @@
+<script setup lang="ts">
+const links = [
+  { label: 'Главная', to: '/', icon: 'i-heroicons-home' },
+  { label: 'История игр', to: '/games', icon: 'i-heroicons-rectangle-stack' },
+];
+</script>
+
+<template>
+  <div class="min-h-screen flex flex-col">
+    <header
+      class="sticky top-0 z-40 border-b border-bronze/20 bg-navy/80 backdrop-blur supports-[backdrop-filter]:bg-navy/60"
+    >
+      <div
+        class="mx-auto w-full max-w-5xl px-4 py-3 flex items-center justify-between gap-3"
+      >
+        <NuxtLink to="/" class="flex items-center gap-3 group">
+          <AppLogo :size="44" />
+          <div class="leading-tight">
+            <div class="font-club text-lg sm:text-xl text-gradient-gold">
+              Деловая Мафия
+            </div>
+            <div class="text-[11px] uppercase tracking-widest text-bronze">
+              Панель ведущего
+            </div>
+          </div>
+        </NuxtLink>
+
+        <nav class="flex items-center gap-1.5">
+          <UButton
+            v-for="link in links"
+            :key="link.to"
+            :to="link.to"
+            :icon="link.icon"
+            color="gold"
+            variant="ghost"
+            size="sm"
+            class="hidden sm:inline-flex"
+          >
+            {{ link.label }}
+          </UButton>
+          <UButton
+            to="/games/new"
+            icon="i-heroicons-plus"
+            color="gold"
+            size="sm"
+          >
+            <span class="hidden sm:inline">Создать игру</span>
+            <span class="sm:hidden">Игра</span>
+          </UButton>
+        </nav>
+      </div>
+    </header>
+
+    <main class="flex-1 mx-auto w-full max-w-5xl px-4 py-6 sm:py-8">
+      <slot />
+    </main>
+
+    <footer class="mx-auto w-full max-w-5xl px-4 py-6">
+      <div class="club-divider mb-3" />
+      <p class="text-center text-xs text-bronze">
+        Закрытый клуб «Деловая Мафия» · инструмент ведущего
+      </p>
+    </footer>
+  </div>
+</template>
