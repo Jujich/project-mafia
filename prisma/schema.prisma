@@ -1,0 +1,263 @@
+// Prisma schema for "Закрытый клуб Деловая Мафия" host panel.
+// Designed so future statistics (per player / per clan wins) can be built on top.
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+// ---------------------------------------------------------------------------
+// Enums
+// ---------------------------------------------------------------------------
+
+enum GameStatus {
+  SETUP
+  IN_PROGRESS
+  FINISHED
+}
+
+enum GamePhase {
+  SETUP
+  NIGHT
+  DAY
+  FINISHED
+}
+
+enum Clan {
+  CIVILIANS
+  MAFIA
+  MANIAC
+}
+
+enum Role {
+  CIVILIAN // Мирный житель
+  MAFIA // Мафия
+  DON // Дон
+  MANIAC // Маньяк
+  DOCTOR // Доктор
+  COMMISSAR // Комиссар
+  BEAUTY // Красотка
+  COP // Коп
+  JOURNALIST // Журналист (optional)
+  WHITE_MARK // Белая метка (optional)
+}
+
+enum DeathPhase {
+  NIGHT
+  DAY
+}
+
+enum DeathReason {
+  MAFIA
+  MANIAC
+  COP
+  DON_DELAYED
+  VOTE
+}
+
+enum NightStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum DayStatus {
+  IN_PROGRESS
+  COMPLETED
+}
+
+enum NightActionType {
+  BEAUTY_IMMUNITY
+  MAFIA_KILL
+  MANIAC_KILL
+  DOCTOR_HEAL
+  COMMISSAR_CHECK
+  DON_CHECK
+  COP_SHOOT
+  JOURNALIST_COMPARE
+  WHITE_MARK_WAKE
+  DON_DELAYED_KILL
+}
+
+enum EliminationReason {
+  VOTE
+  NO_ELIMINATION
+}
+
+// ---------------------------------------------------------------------------
+// Models
+// ---------------------------------------------------------------------------
+
+model Game {
+  id     String     @id @default(uuid())
+  title  String
+  status GameStatus @default(SETUP)
+
+  startedAt  DateTime?
+  finishedAt DateTime?
+  winnerClan Clan?
+  hostComment String?
+
+  currentPhase       GamePhase @default(SETUP)
+  currentNightNumber Int       @default(0)
+  currentDayNumber   Int       @default(0)
+
+  // Don special flow
+  donFoundCommissar            Boolean @default(false)
+  donFoundCommissarNightNumber Int?
+  donActsWithMafia             Boolean @default(false)
+
+  // Doctor special flow
+  doctorSelfHealUsed Boolean @default(false)
+
+  players GamePlayer[]
+  nights  Night[]
+  days    Day[]
+  events  GameEvent[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// Reusable player identity across games (keyed by nickname for future stats).
+model Player {
+  id       String @id @default(uuid())
+  nickname String @unique
+
+  gamePlayers GamePlayer[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// A player's participation in a specific game (role, clan, life status).
+model GamePlayer {
+  id       String @id @default(uuid())
+  gameId   String
+  playerId String
+
+  role Role
+  clan Clan
+
+  isAlive          Boolean      @default(true)
+  deathPhase       DeathPhase?
+  deathReason      DeathReason?
+  deathNightNumber Int?
+  deathDayNumber   Int?
+
+  game   Game   @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  player Player @relation(fields: [playerId], references: [id])
+
+  // Relations from night actions (named for clarity).
+  actionsAsActor       NightAction[] @relation("ActionActor")
+  actionsAsTarget      NightAction[] @relation("ActionTarget")
+  actionsAsSecondTarget NightAction[] @relation("ActionSecondTarget")
+  nominations          VoteNomination[]
+  eliminations         DayElimination[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@unique([gameId, playerId])
+}
+
+model Night {
+  id     String      @id @default(uuid())
+  gameId String
+  number Int
+  status NightStatus @default(IN_PROGRESS)
+
+  summaryText String?
+
+  game    Game          @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  actions NightAction[]
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@unique([gameId, number])
+}
+
+model NightAction {
+  id      String          @id @default(uuid())
+  nightId String
+  actorRole Role
+  actionType NightActionType
+
+  actorGamePlayerId       String?
+  targetGamePlayerId      String?
+  secondTargetGamePlayerId String?
+
+  // Free-form result (e.g. "MAFIA" / "NOT_MAFIA" / "SAME_CLAN" / "DIFFERENT_CLAN" / "FOUND" / "NOT_FOUND").
+  result      String?
+  publicText  String?
+  privateText String?
+
+  night        Night       @relation(fields: [nightId], references: [id], onDelete: Cascade)
+  actor        GamePlayer? @relation("ActionActor", fields: [actorGamePlayerId], references: [id])
+  target       GamePlayer? @relation("ActionTarget", fields: [targetGamePlayerId], references: [id])
+  secondTarget GamePlayer? @relation("ActionSecondTarget", fields: [secondTargetGamePlayerId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+model Day {
+  id     String    @id @default(uuid())
+  gameId String
+  number Int
+  status DayStatus @default(IN_PROGRESS)
+
+  discussionStartedAt DateTime?
+  discussionEndedAt   DateTime?
+
+  game        Game             @relation(fields: [gameId], references: [id], onDelete: Cascade)
+  nominations VoteNomination[]
+  elimination DayElimination?
+
+  createdAt   DateTime  @default(now())
+  completedAt DateTime?
+
+  @@unique([gameId, number])
+}
+
+model VoteNomination {
+  id                 String @id @default(uuid())
+  dayId              String
+  nomineeGamePlayerId String
+
+  day     Day        @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  nominee GamePlayer @relation(fields: [nomineeGamePlayerId], references: [id])
+
+  createdAt DateTime @default(now())
+
+  @@unique([dayId, nomineeGamePlayerId])
+}
+
+model DayElimination {
+  id    String @id @default(uuid())
+  dayId String @unique
+
+  eliminatedGamePlayerId String?
+  reason                 EliminationReason
+
+  day        Day         @relation(fields: [dayId], references: [id], onDelete: Cascade)
+  eliminated GamePlayer? @relation(fields: [eliminatedGamePlayerId], references: [id])
+
+  createdAt DateTime @default(now())
+}
+
+// Optional audit log of everything that happened during a game.
+model GameEvent {
+  id      String    @id @default(uuid())
+  gameId  String
+  phase   GamePhase
+  type    String
+  payload Json?
+
+  game Game @relation(fields: [gameId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+}
