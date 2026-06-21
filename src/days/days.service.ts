@@ -91,7 +91,10 @@ export class DaysService {
       ? await this.prisma.day.findUnique({
           where: { id: knownDayId },
           include: {
-            nominations: { include: { nominee: { include: { player: true } } } },
+            nominations: {
+              include: { nominee: { include: { player: true } } },
+              orderBy: { order: 'asc' },
+            },
             elimination: { include: { eliminated: { include: { player: true } } } },
           },
         })
@@ -99,7 +102,10 @@ export class DaysService {
           where: { gameId, status: DayStatus.IN_PROGRESS },
           orderBy: { number: 'desc' },
           include: {
-            nominations: { include: { nominee: { include: { player: true } } } },
+            nominations: {
+              include: { nominee: { include: { player: true } } },
+              orderBy: { order: 'asc' },
+            },
             elimination: { include: { eliminated: { include: { player: true } } } },
           },
         });
@@ -163,6 +169,7 @@ export class DaysService {
       nominations: day.nominations.map((n) => ({
         gamePlayerId: n.nomineeGamePlayerId,
         nickname: n.nominee.player.nickname,
+        order: n.order,
       })),
       elimination: day.elimination
         ? {
@@ -212,9 +219,10 @@ export class DaysService {
 
     await this.prisma.$transaction(async (tx) => {
       await tx.voteNomination.deleteMany({ where: { dayId } });
-      for (const id of ids) {
+      // Persist the nomination order (1-based) — the host puts players up one by one.
+      for (let i = 0; i < ids.length; i += 1) {
         await tx.voteNomination.create({
-          data: { dayId, nomineeGamePlayerId: id },
+          data: { dayId, nomineeGamePlayerId: ids[i], order: i + 1 },
         });
       }
     });

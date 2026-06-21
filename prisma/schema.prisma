@@ -227,6 +227,8 @@ model VoteNomination {
   id                 String @id @default(uuid())
   dayId              String
   nomineeGamePlayerId String
+  // 1-based order in which the player was put up for the vote.
+  order              Int    @default(0)
 
   day     Day        @relation(fields: [dayId], references: [id], onDelete: Cascade)
   nominee GamePlayer @relation(fields: [nomineeGamePlayerId], references: [id])

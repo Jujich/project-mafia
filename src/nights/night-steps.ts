@@ -24,6 +24,8 @@ export interface NightStep {
   actionType: NightActionType;
   title: string;
   hostText: string;
+  /** Nickname of the player acting on this step (for the night review). */
+  actorNickname: string | null;
   selection: TargetSelection;
   allowNoTarget: boolean;
   /** Must be addressed (an action saved) before the night can be completed. */
@@ -83,6 +85,7 @@ export function buildNightSteps(
       actionType: NightActionType.BEAUTY_IMMUNITY,
       title: 'Красотка',
       hostText: HOST_TEXTS.BEAUTY,
+      actorNickname: beauty.nickname,
       selection: 'single',
       allowNoTarget: false,
       requiresAction: true,
@@ -97,6 +100,9 @@ export function buildNightSteps(
       actionType: NightActionType.MAFIA_KILL,
       title: donActsWithMafia ? 'Мафия и Дон' : 'Мафия',
       hostText: donActsWithMafia ? HOST_TEXTS.MAFIA_WITH_DON : HOST_TEXTS.MAFIA,
+      actorNickname: donActsWithMafia
+        ? don?.nickname ?? null
+        : aliveOf(Role.MAFIA)[0]?.nickname ?? null,
       selection: 'single',
       allowNoTarget: true,
       requiresAction: true,
@@ -111,6 +117,7 @@ export function buildNightSteps(
       actionType: NightActionType.MANIAC_KILL,
       title: 'Маньяк',
       hostText: HOST_TEXTS.MANIAC,
+      actorNickname: maniac.nickname,
       selection: 'single',
       allowNoTarget: true,
       requiresAction: true,
@@ -129,6 +136,7 @@ export function buildNightSteps(
       actionType: NightActionType.DOCTOR_HEAL,
       title: 'Доктор',
       hostText: HOST_TEXTS.DOCTOR,
+      actorNickname: doctor.nickname,
       selection: 'single',
       allowNoTarget: true,
       requiresAction: true,
@@ -143,6 +151,7 @@ export function buildNightSteps(
       actionType: NightActionType.COMMISSAR_CHECK,
       title: 'Комиссар',
       hostText: HOST_TEXTS.COMMISSAR,
+      actorNickname: commissar.nickname,
       selection: 'single',
       allowNoTarget: false,
       requiresAction: true,
@@ -158,6 +167,7 @@ export function buildNightSteps(
       actionType: NightActionType.DON_CHECK,
       title: 'Дон',
       hostText: HOST_TEXTS.DON,
+      actorNickname: don.nickname,
       selection: 'single',
       allowNoTarget: true,
       requiresAction: true,
@@ -172,6 +182,7 @@ export function buildNightSteps(
       actionType: NightActionType.COP_SHOOT,
       title: 'Коп',
       hostText: HOST_TEXTS.COP,
+      actorNickname: cop.nickname,
       selection: 'single',
       allowNoTarget: true,
       requiresAction: true,
@@ -186,6 +197,7 @@ export function buildNightSteps(
       actionType: NightActionType.JOURNALIST_COMPARE,
       title: 'Журналист',
       hostText: HOST_TEXTS.JOURNALIST,
+      actorNickname: journalist.nickname,
       selection: 'double',
       allowNoTarget: false,
       requiresAction: true,
@@ -201,6 +213,7 @@ export function buildNightSteps(
       actionType: NightActionType.WHITE_MARK_WAKE,
       title: 'Белая метка',
       hostText: HOST_TEXTS.WHITE_MARK,
+      actorNickname: whiteMark.nickname,
       selection: 'none',
       allowNoTarget: true,
       requiresAction: false,
