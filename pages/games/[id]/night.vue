@@ -127,16 +127,48 @@ const reviewOpen = ref(false);
 const completing = ref(false);
 const result = ref<{ summary: string | null } | null>(null);
 
-function targetLabel(s: NightStep) {
+function nick(s: NightStep, id?: string) {
+  return s.eligibleTargets.find((x) => x.gamePlayerId === id)?.nickname ?? '?';
+}
+
+// Human-readable description of each role's night action, for the review.
+function actionSummary(s: NightStep) {
   const sel = selections[s.actionType];
-  if (s.selection === 'none') return 'Просто просыпается';
-  if (!sel?.target || sel.target === NONE) return 'Никого';
-  const t = s.eligibleTargets.find((x) => x.gamePlayerId === sel.target);
-  if (s.selection === 'double') {
-    const t2 = s.eligibleTargets.find((x) => x.gamePlayerId === sel.second);
-    return `${t?.nickname ?? '?'} и ${t2?.nickname ?? '?'}`;
+  const hasTarget = !!sel?.target && sel.target !== NONE;
+  const t = () => nick(s, sel?.target);
+
+  switch (s.actionType) {
+    case 'BEAUTY_IMMUNITY':
+      return hasTarget
+        ? `Красотка дала иммунитет игроку ${t()}`
+        : 'Красотка никого не выбрала';
+    case 'MAFIA_KILL':
+      return hasTarget ? `Мафия убила игрока ${t()}` : 'Мафия никого не убила';
+    case 'MANIAC_KILL':
+      return hasTarget ? `Маньяк убил игрока ${t()}` : 'Маньяк никого не убил';
+    case 'DOCTOR_HEAL':
+      return hasTarget
+        ? `Доктор вылечил игрока ${t()}`
+        : 'Доктор никого не лечил';
+    case 'COMMISSAR_CHECK':
+      return hasTarget
+        ? `Комиссар проверил игрока ${t()}`
+        : 'Комиссар никого не проверял';
+    case 'DON_CHECK':
+      return hasTarget
+        ? `Дон проверил игрока ${t()}`
+        : 'Дон никого не проверял';
+    case 'COP_SHOOT':
+      return hasTarget ? `Коп выстрелил в игрока ${t()}` : 'Коп не стрелял';
+    case 'JOURNALIST_COMPARE':
+      return hasTarget && sel?.second
+        ? `Журналист сравнил игроков ${nick(s, sel.target)} и ${nick(s, sel.second)}`
+        : 'Журналист никого не сравнивал';
+    case 'WHITE_MARK_WAKE':
+      return `Белая метка — это ${s.actorNickname ?? '?'}`;
+    default:
+      return s.title;
   }
-  return t?.nickname ?? '?';
 }
 
 async function completeNight() {
@@ -384,10 +416,12 @@ async function goToDay() {
           <li
             v-for="s in steps"
             :key="s.key"
-            class="flex items-center justify-between gap-2 rounded-lg bg-navy/40 px-3 py-2"
+            class="flex items-start gap-2 rounded-lg bg-navy/40 px-3 py-2"
           >
-            <span class="text-bronze">{{ s.title }}</span>
-            <span class="text-champagne text-right">{{ targetLabel(s) }}</span>
+            <span class="text-xs uppercase tracking-wide text-bronze/70 shrink-0 w-24">
+              {{ s.title }}
+            </span>
+            <span class="text-champagne flex-1">{{ actionSummary(s) }}</span>
           </li>
         </ul>
 

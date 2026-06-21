@@ -165,6 +165,7 @@ export interface NightStep {
   actionType: NightActionType;
   title: string;
   hostText: string;
+  actorNickname: string | null;
   selection: 'single' | 'double' | 'none';
   allowNoTarget: boolean;
   requiresAction: boolean;
@@ -212,7 +213,7 @@ export interface DayCurrent {
   deathsLastNight: DayDeath[];
   immunePlayer: { gamePlayerId: string; nickname: string } | null;
   nominationCandidates: TargetOption[];
-  nominations: { gamePlayerId: string; nickname: string }[];
+  nominations: { gamePlayerId: string; nickname: string; order: number }[];
   elimination: {
     eliminatedGamePlayerId: string | null;
     nickname: string | null;

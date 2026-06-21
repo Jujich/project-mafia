@@ -29,6 +29,11 @@ watchEffect(() => {
   }
 });
 
+// 1-based position of a candidate in the nomination order (0 if not selected).
+function nomineeOrder(gpId: string) {
+  return selectedNominees.value.indexOf(gpId) + 1;
+}
+
 function toggleNominee(gpId: string) {
   const idx = selectedNominees.value.indexOf(gpId);
   if (idx >= 0) {
@@ -234,13 +239,14 @@ async function startNextNight() {
         </template>
         <p class="text-sm text-bronze mb-3">
           Выберите до 5 кандидатов из живых игроков
-          ({{ selectedNominees.length }}/5).
+          ({{ selectedNominees.length }}/5). Порядок выставления сохраняется —
+          номер показывает очередь игрока.
         </p>
         <div class="flex flex-wrap gap-2">
           <button
             v-for="c in state.nominationCandidates"
             :key="c.gamePlayerId"
-            class="rounded-xl px-3 py-2 text-sm ring-1 transition-colors"
+            class="inline-flex items-center gap-2 rounded-xl px-3 py-2 text-sm ring-1 transition-colors"
             :class="
               selectedNominees.includes(c.gamePlayerId)
                 ? 'bg-gold-400 text-navy ring-gold-400 font-semibold'
@@ -248,8 +254,16 @@ async function startNextNight() {
             "
             @click="toggleNominee(c.gamePlayerId)"
           >
-            {{ c.nickname }}
-            <span class="opacity-70 text-xs">· {{ c.roleLabel }}</span>
+            <span
+              v-if="nomineeOrder(c.gamePlayerId)"
+              class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-navy text-gold-300 text-xs font-bold"
+            >
+              {{ nomineeOrder(c.gamePlayerId) }}
+            </span>
+            <span>
+              {{ c.nickname }}
+              <span class="opacity-70 text-xs">· {{ c.roleLabel }}</span>
+            </span>
           </button>
         </div>
         <p
@@ -294,6 +308,11 @@ async function startNextNight() {
               :value="n.gamePlayerId"
               name="elim"
             />
+            <span
+              class="flex h-5 w-5 shrink-0 items-center justify-center rounded-full bg-gold-400/20 text-gold-300 text-xs font-bold"
+            >
+              {{ n.order }}
+            </span>
             <span class="text-champagne">{{ n.nickname }}</span>
           </label>
           <label
