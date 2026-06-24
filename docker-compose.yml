@@ -16,6 +16,12 @@ services:
       # Where the Nitro server routes proxy to. Override via CI/CD variable if
       # the backend is reachable at a different address.
       NUXT_BACKEND_API_URL: ${NUXT_BACKEND_API_URL:-http://mafia-backend:3000}
+      # Single-admin login gate. Provide via GitLab CI/CD variables (or a
+      # .env file next to this compose on the host). Read at runtime by the
+      # Nitro server.
+      ADMIN_LOGIN: ${ADMIN_LOGIN:-}
+      ADMIN_PASSWORD: ${ADMIN_PASSWORD:-}
+      SESSION_PASSWORD: ${SESSION_PASSWORD:-}
       NITRO_HOST: 0.0.0.0
       NITRO_PORT: 3000
     ports:

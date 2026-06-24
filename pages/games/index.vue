@@ -3,7 +3,7 @@ import type { GameListItem } from '~/types/game';
 
 useHead({ title: 'История игр — Деловая Мафия' });
 
-const { data: games, pending, refresh } = await useFetch<GameListItem[]>(
+const { data: games, pending, refresh } = await useApiFetch<GameListItem[]>(
   '/api/games',
 );
 

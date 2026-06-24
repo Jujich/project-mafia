@@ -1,4 +1,6 @@
 <script setup lang="ts">
+const { signOut } = useAuth();
+
 const links = [
   { label: 'Главная', to: '/', icon: 'i-heroicons-home' },
   { label: 'История игр', to: '/games', icon: 'i-heroicons-rectangle-stack' },
@@ -47,6 +49,15 @@ const links = [
             <span class="hidden sm:inline">Создать игру</span>
             <span class="sm:hidden">Игра</span>
           </UButton>
+          <UButton
+            icon="i-heroicons-arrow-left-start-on-rectangle"
+            color="gray"
+            variant="ghost"
+            size="sm"
+            title="Выйти"
+            aria-label="Выйти"
+            @click="signOut"
+          />
         </nav>
       </div>
     </header>

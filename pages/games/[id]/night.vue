@@ -12,7 +12,7 @@ const {
   data: current,
   pending,
   error,
-} = await useFetch<NightCurrent>(`/api/games/${id}/nights/current`);
+} = await useApiFetch<NightCurrent>(`/api/games/${id}/nights/current`);
 
 const steps = computed<NightStep[]>(() => current.value?.steps ?? []);
 const nightId = computed(() => current.value?.night.id ?? '');

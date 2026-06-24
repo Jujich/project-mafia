@@ -7,7 +7,7 @@ const api = useGameApi();
 const id = route.params.id as string;
 const busy = ref(false);
 
-const { data: game, pending, refresh } = await useFetch<Game>(
+const { data: game, pending, refresh } = await useApiFetch<Game>(
   `/api/games/${id}`,
 );
 

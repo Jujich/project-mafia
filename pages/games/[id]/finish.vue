@@ -8,7 +8,7 @@ const id = route.params.id as string;
 
 useHead({ title: 'Завершение игры — Деловая Мафия' });
 
-const { data: game } = await useFetch<Game>(`/api/games/${id}`);
+const { data: game } = await useApiFetch<Game>(`/api/games/${id}`);
 
 const CLANS: { clan: Clan; label: string; desc: string; icon: string }[] = [
   {

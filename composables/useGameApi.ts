@@ -27,6 +27,13 @@ export function useGameApi() {
     try {
       return await $fetch<T>(url, opts);
     } catch (err: any) {
+      const status = err?.statusCode || err?.response?.status;
+      if (status === 401) {
+        // Session expired / not authorized — back to the login gate.
+        useAuth().loggedIn.value = false;
+        await navigateTo('/login');
+        throw err;
+      }
       toast.add({
         title: 'Ошибка',
         description: extractMessage(err),

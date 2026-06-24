@@ -8,7 +8,7 @@ const id = route.params.id as string;
 
 useHead({ title: 'День — Деловая Мафия' });
 
-const { data, pending, error } = await useFetch<DayCurrent>(
+const { data, pending, error } = await useApiFetch<DayCurrent>(
   `/api/games/${id}/days/current`,
 );
 
