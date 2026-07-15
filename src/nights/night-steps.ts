@@ -67,7 +67,6 @@ export function buildNightSteps(
   const commissar = first(Role.COMMISSAR);
   const cop = first(Role.COP);
   const journalist = first(Role.JOURNALIST);
-  const whiteMark = first(Role.WHITE_MARK);
 
   // Don only acts with the mafia if he is still alive.
   const donActsWithMafia = ctx.donActsWithMafia && !!don;
@@ -202,22 +201,6 @@ export function buildNightSteps(
       allowNoTarget: false,
       requiresAction: true,
       eligibleTargets: aliveExcept(journalist.id),
-    });
-  }
-
-  // White Mark only wakes on the first night, purely so the host sees who it is.
-  if (whiteMark && ctx.nightNumber === 1) {
-    steps.push({
-      key: 'WHITE_MARK',
-      role: Role.WHITE_MARK,
-      actionType: NightActionType.WHITE_MARK_WAKE,
-      title: 'Белая метка',
-      hostText: HOST_TEXTS.WHITE_MARK,
-      actorNickname: whiteMark.nickname,
-      selection: 'none',
-      allowNoTarget: true,
-      requiresAction: false,
-      eligibleTargets: [],
     });
   }
 

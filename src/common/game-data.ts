@@ -87,7 +87,7 @@ export const ROLE_DEFINITIONS: RoleDefinition[] = [
     optional: true,
     hasNightAction: false,
     description:
-      'Просыпается только в первую ночь, чтобы ведущий её увидел. Гибнет ночью только если мафия и маньяк выбрали её одновременно.',
+      'Не просыпается ночью. Гибнет ночью только если мафия и маньяк выбрали её одновременно.',
   },
   {
     role: Role.MAFIA,
@@ -176,7 +176,6 @@ export const NIGHT_ROLE_ORDER: Role[] = [
   Role.DON,
   Role.COP,
   Role.JOURNALIST,
-  Role.WHITE_MARK,
 ];
 
 /** Maps a wake-up step role to its primary night action type. */
@@ -189,7 +188,6 @@ export const ROLE_TO_ACTION_TYPE: Partial<Record<Role, NightActionType>> = {
   [Role.DON]: NightActionType.DON_CHECK,
   [Role.COP]: NightActionType.COP_SHOOT,
   [Role.JOURNALIST]: NightActionType.JOURNALIST_COMPARE,
-  [Role.WHITE_MARK]: NightActionType.WHITE_MARK_WAKE,
 };
 
 /**
@@ -247,10 +245,5 @@ export const HOST_TEXTS: Record<string, string> = {
     'Просыпается Журналист.',
     'Журналист выбирает двух игроков и узнаёт: один это клан или разные кланы.',
     'Результат не объявляется публично.',
-  ].join('\n\n'),
-  WHITE_MARK: [
-    'Просыпается Белая метка.',
-    'Это нужно только для того, чтобы ведущий увидел, кто Белая метка.',
-    'У Белой метки нет действия.',
   ].join('\n\n'),
 };
