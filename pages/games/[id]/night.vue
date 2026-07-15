@@ -111,8 +111,23 @@ async function saveCurrent() {
   }
 }
 
+function markActionChanged(actionType: string) {
+  if (!saved[actionType]) return;
+  saved[actionType] = false;
+  delete feedback[actionType];
+}
+
 const canComplete = computed(() =>
   steps.value.every((s) => !s.requiresAction || saved[s.actionType]),
+);
+
+const hiddenReviewActions = new Set([
+  'DOCTOR_HEAL',
+  'JOURNALIST_COMPARE',
+  'WHITE_MARK_WAKE',
+]);
+const reviewSteps = computed(() =>
+  steps.value.filter((s) => !hiddenReviewActions.has(s.actionType)),
 );
 
 function next() {
@@ -133,8 +148,13 @@ function nick(s: NightStep, id?: string) {
 
 // Human-readable description of each role's night action, for the review.
 function actionSummary(s: NightStep) {
+  if (s.requiresAction && !saved[s.actionType]) {
+    return 'Действие не сохранено';
+  }
+
   const sel = selections[s.actionType];
   const hasTarget = !!sel?.target && sel.target !== NONE;
+  const actionResult = feedback[s.actionType]?.result;
   const t = () => nick(s, sel?.target);
 
   switch (s.actionType) {
@@ -146,26 +166,18 @@ function actionSummary(s: NightStep) {
       return hasTarget ? `Мафия убила игрока ${t()}` : 'Мафия никого не убила';
     case 'MANIAC_KILL':
       return hasTarget ? `Маньяк убил игрока ${t()}` : 'Маньяк никого не убил';
-    case 'DOCTOR_HEAL':
-      return hasTarget
-        ? `Доктор вылечил игрока ${t()}`
-        : 'Доктор никого не лечил';
     case 'COMMISSAR_CHECK':
-      return hasTarget
-        ? `Комиссар проверил игрока ${t()}`
-        : 'Комиссар никого не проверял';
+      return actionResult === 'MAFIA'
+        ? 'Комиссар нашёл мафию'
+        : 'Комиссар не нашёл мафию';
     case 'DON_CHECK':
-      return hasTarget
-        ? `Дон проверил игрока ${t()}`
-        : 'Дон никого не проверял';
+      return actionResult === 'FOUND'
+        ? 'Дон нашёл комиссара. Комиссар живёт ещё одну ночь, потом умирает'
+        : 'Дон не нашёл комиссара';
     case 'COP_SHOOT':
-      return hasTarget ? `Коп выстрелил в игрока ${t()}` : 'Коп не стрелял';
-    case 'JOURNALIST_COMPARE':
-      return hasTarget && sel?.second
-        ? `Журналист сравнил игроков ${nick(s, sel.target)} и ${nick(s, sel.second)}`
-        : 'Журналист никого не сравнивал';
-    case 'WHITE_MARK_WAKE':
-      return `Белая метка — это ${s.actorNickname ?? '?'}`;
+      return actionResult === 'HIT'
+        ? `Коп нашёл игрока ${t()}`
+        : 'Коп не нашёл';
     default:
       return s.title;
   }
@@ -305,6 +317,8 @@ async function goToDay() {
               option-attribute="label"
               placeholder="Выберите игрока"
               size="xl"
+              :disabled="saving"
+              @update:model-value="markActionChanged(step.actionType)"
             />
           </UFormGroup>
         </div>
@@ -318,6 +332,8 @@ async function goToDay() {
               option-attribute="label"
               placeholder="Выберите игрока"
               size="xl"
+              :disabled="saving"
+              @update:model-value="markActionChanged(step.actionType)"
             />
           </UFormGroup>
           <UFormGroup label="Второй игрок">
@@ -328,6 +344,8 @@ async function goToDay() {
               option-attribute="label"
               placeholder="Выберите игрока"
               size="xl"
+              :disabled="saving"
+              @update:model-value="markActionChanged(step.actionType)"
             />
           </UFormGroup>
         </div>
@@ -414,7 +432,7 @@ async function goToDay() {
 
         <ul class="space-y-2">
           <li
-            v-for="s in steps"
+            v-for="s in reviewSteps"
             :key="s.key"
             class="flex items-start gap-2 rounded-lg bg-navy/40 px-3 py-2"
           >

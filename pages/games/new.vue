@@ -113,6 +113,48 @@ const remainingMap = computed(() => {
   return m;
 });
 
+function autoAssignRemainingCivilians() {
+  if (!compositionValid.value) return;
+
+  const unassignedIndexes = assignments.value.reduce<number[]>(
+    (indexes, assignedRole, playerIndex) => {
+      if (!assignedRole) indexes.push(playerIndex);
+      return indexes;
+    },
+    [],
+  );
+  if (unassignedIndexes.length === 0) return;
+
+  const rolesStillRemaining = pool.value.filter(
+    ({ role }) => (remainingMap.value[role] ?? 0) > 0,
+  );
+  const onlyCiviliansRemain =
+    rolesStillRemaining.length === 1 &&
+    rolesStillRemaining[0]?.role === 'CIVILIAN' &&
+    (remainingMap.value.CIVILIAN ?? 0) === unassignedIndexes.length;
+
+  if (!onlyCiviliansRemain) return;
+
+  const next = [...assignments.value];
+  for (const playerIndex of unassignedIndexes) {
+    next[playerIndex] = 'CIVILIAN';
+  }
+  assignments.value = next;
+}
+
+function assignRole(index: number, role: Role | null) {
+  const next = [...assignments.value];
+  next[index] = role;
+  assignments.value = next;
+  autoAssignRemainingCivilians();
+}
+
+function clearAssignment(index: number) {
+  const next = [...assignments.value];
+  next[index] = null;
+  assignments.value = next;
+}
+
 function roleOptions(index: number) {
   const current = assignments.value[index];
   return pool.value
@@ -170,6 +212,7 @@ const steps = [
 
 function next() {
   if (step.value < 5) step.value += 1;
+  if (step.value === 4) autoAssignRemainingCivilians();
 }
 function back() {
   if (step.value > 1) step.value -= 1;
@@ -402,15 +445,28 @@ function back() {
             <span class="text-bronze text-sm">{{ i + 1 }}.</span>
             {{ p.nickname }}
           </span>
-          <USelect
-            v-model="assignments[i]"
-            :options="roleOptions(i)"
-            value-attribute="value"
-            option-attribute="label"
-            placeholder="Выбрать роль"
-            size="lg"
-            class="sm:w-72"
-          />
+          <div class="flex items-center gap-1 sm:w-80">
+            <USelect
+              :model-value="assignments[i] ?? undefined"
+              :options="roleOptions(i)"
+              value-attribute="value"
+              option-attribute="label"
+              placeholder="Выбрать роль"
+              size="lg"
+              class="flex-1"
+              @update:model-value="assignRole(i, $event)"
+            />
+            <UButton
+              v-if="assignments[i]"
+              color="gray"
+              variant="ghost"
+              size="sm"
+              icon="i-heroicons-x-mark"
+              :aria-label="`Снять роль с игрока ${p.nickname}`"
+              title="Снять роль"
+              @click="clearAssignment(i)"
+            />
+          </div>
         </div>
 
         <UAlert
