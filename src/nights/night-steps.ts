@@ -49,7 +49,8 @@ const toOption = (p: StepPlayer): TargetOption => ({
 /**
  * Builds the ordered list of night wake-ups for the given night (spec §8),
  * skipping roles whose players are dead and merging the Don into the mafia
- * step once he acts with them.
+ * step once he acts with them. If all regular Mafia players are dead, the Don
+ * performs their kill while retaining his separate Commissar search.
  */
 export function buildNightSteps(
   players: StepPlayer[],
@@ -68,8 +69,11 @@ export function buildNightSteps(
   const cop = first(Role.COP);
   const journalist = first(Role.JOURNALIST);
 
-  // Don only acts with the mafia if he is still alive.
+  // Don only acts with the mafia if he is still alive. When no regular Mafia
+  // remains, he performs their kill even before permanently joining them.
   const donActsWithMafia = ctx.donActsWithMafia && !!don;
+  const donReplacesMafia = !!don && !hasAliveMafia;
+  const donPerformsMafiaKill = donActsWithMafia || donReplacesMafia;
 
   const allAlive = alive.map(toOption);
   const aliveExcept = (id: string) =>
@@ -92,14 +96,22 @@ export function buildNightSteps(
     });
   }
 
-  if (hasAliveMafia || donActsWithMafia) {
+  if (hasAliveMafia || donPerformsMafiaKill) {
     steps.push({
       key: 'MAFIA',
       role: Role.MAFIA,
       actionType: NightActionType.MAFIA_KILL,
-      title: donActsWithMafia ? 'Мафия и Дон' : 'Мафия',
-      hostText: donActsWithMafia ? HOST_TEXTS.MAFIA_WITH_DON : HOST_TEXTS.MAFIA,
-      actorNickname: donActsWithMafia
+      title: donReplacesMafia
+        ? 'Дон (убийство)'
+        : donActsWithMafia
+          ? 'Мафия и Дон'
+          : 'Мафия',
+      hostText: donReplacesMafia
+        ? HOST_TEXTS.DON_MAFIA_KILL
+        : donActsWithMafia
+          ? HOST_TEXTS.MAFIA_WITH_DON
+          : HOST_TEXTS.MAFIA,
+      actorNickname: donPerformsMafiaKill
         ? don?.nickname ?? null
         : aliveOf(Role.MAFIA)[0]?.nickname ?? null,
       selection: 'single',
@@ -158,7 +170,8 @@ export function buildNightSteps(
     });
   }
 
-  // Separate Don step only while he still acts alone (searching the Commissar).
+  // The Don keeps this separate search when replacing dead Mafia players. It
+  // disappears only after he permanently joins the Mafia action.
   if (don && !donActsWithMafia) {
     steps.push({
       key: 'DON',

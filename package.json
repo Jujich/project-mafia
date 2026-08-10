@@ -12,6 +12,7 @@
     "prisma:migrate": "prisma migrate dev",
     "prisma:deploy": "prisma migrate deploy",
     "prisma:seed": "ts-node prisma/seed.ts",
+    "test": "node --test -r ts-node/register test/*.spec.ts",
     "lint": "tsc --noEmit"
   },
   "dependencies": {
