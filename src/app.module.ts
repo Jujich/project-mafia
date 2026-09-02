@@ -5,6 +5,7 @@ import { DictionariesModule } from './dictionaries/dictionaries.module';
 import { GamesModule } from './games/games.module';
 import { NightsModule } from './nights/nights.module';
 import { DaysModule } from './days/days.module';
+import { SyncModule } from './sync/sync.module';
 
 @Module({
   imports: [
@@ -14,6 +15,7 @@ import { DaysModule } from './days/days.module';
     GamesModule,
     NightsModule,
     DaysModule,
+    SyncModule,
   ],
 })
 export class AppModule {}

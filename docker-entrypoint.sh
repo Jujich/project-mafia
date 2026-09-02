@@ -1,15 +1,12 @@
 #!/bin/sh
 set -e
 
-echo "Waiting for database and applying schema..."
+echo "Applying committed database migrations..."
 
-# Prefer committed migrations; fall back to db push for a fresh MVP database.
-if npx prisma migrate deploy; then
-  echo "Prisma migrations applied."
-else
-  echo "No migrations to deploy — syncing schema with db push."
-  npx prisma db push --accept-data-loss
-fi
+# Fail closed: a migration error must not bypass history or destroy existing data.
+# With set -e, the API starts only after all committed migrations succeed.
+npx prisma migrate deploy
+echo "Prisma migrations applied."
 
 echo "Starting backend on port ${PORT:-3000}..."
 exec node dist/main.js

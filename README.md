@@ -20,6 +20,7 @@ REST API панели ведущего клубной Мафии. Хранит �
 | -------------- | ----------------------------------------- |
 | `DATABASE_URL` | Строка подключения PostgreSQL для Prisma  |
 | `PORT`         | Порт HTTP-сервера (по умолчанию `3000`)   |
+| `MOBILE_SYNC_TOKEN` | Обязательный отдельный токен импорта из Android; без него sync API возвращает 503 |
 
 ## Локальный запуск
 
@@ -40,8 +41,10 @@ docker run -d --name mafia-pg -e POSTGRES_USER=mafia -e POSTGRES_PASSWORD=mafia 
 
 ## Запуск в Docker
 
-`docker-compose.yml` поднимает PostgreSQL и backend. Контейнер сам применяет
-схему при старте (`prisma migrate deploy`, с откатом на `prisma db push`).
+`docker-compose.yml` поднимает PostgreSQL и backend. Контейнер применяет
+сохранённые миграции при старте (`prisma migrate deploy`). При ошибке миграции
+запуск backend останавливается; автоматического `db push` и разрешения потери
+данных нет. Причину ошибки нужно устранить до повторного запуска.
 
 ```bash
 docker network create mafia-net      # общая сеть с frontend (один раз)
@@ -54,7 +57,9 @@ docker compose up -d --build
 ## Миграции Prisma
 
 Начальная миграция лежит в `prisma/migrations/0_init`. В проде применяется
-автоматически энтрипоинтом контейнера. Вручную:
+автоматически энтрипоинтом контейнера. Для существующей БД, созданной без
+истории Prisma Migrate, сначала проверьте схему и корректно выполните baseline;
+не обходите ошибку миграции через `db push --accept-data-loss`. Вручную:
 
 ```bash
 npx prisma migrate deploy     # применить существующие миграции
@@ -80,6 +85,11 @@ npx prisma migrate dev -n ... # создать новую миграцию пр�
 | `POST /api/games/:id/days/:dayId/eliminate`       | Сохранить результат голосования         |
 | `POST /api/games/:id/days/:dayId/complete`        | Завершить день                          |
 | `GET /api/roles`, `GET /api/clans`                | Справочники                             |
+| `PUT /api/sync/games/:clientGameId`               | Идемпотентный импорт офлайн-снимка      |
+
+Мобильный endpoint принимает только более новую `revision`. Повтор уже
+принятой ревизии возвращает успешный ответ и не создаёт дубль. Вся замена
+нормализованных данных игры выполняется одной транзакцией.
 
 ## Игровая логика
 

@@ -96,6 +96,12 @@ model Game {
   title  String
   status GameStatus @default(SETUP)
 
+  // Stable identity/revision for games authored by an offline mobile client.
+  clientGameId   String?   @unique
+  clientRevision Int       @default(0)
+  playedAt       DateTime?
+  syncedAt       DateTime?
+
   startedAt  DateTime?
   finishedAt DateTime?
   winnerClan Clan?

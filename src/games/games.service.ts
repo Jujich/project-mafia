@@ -60,6 +60,7 @@ export class GamesService {
           title: dto.title.trim(),
           status: GameStatus.SETUP,
           currentPhase: GamePhase.SETUP,
+          playedAt,
         },
       });
 
