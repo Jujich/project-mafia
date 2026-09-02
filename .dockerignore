@@ -8,3 +8,12 @@ Dockerfile
 .dockerignore
 dist
 *.log
+.credentials
+android
+artifacts
+*.apk
+*.aab
+*.jks
+*.keystore
+keystore.properties
+signing.properties

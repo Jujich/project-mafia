@@ -7,18 +7,33 @@
     "dev": "nuxt dev",
     "build": "nuxt build",
     "generate": "nuxt generate",
+    "build:android:web": "NUXT_CAPACITOR=true nuxt generate",
+    "android:sync": "npm run build:android:web && cap sync android",
+    "android:assets": "capacitor-assets generate --android --iconBackgroundColor '#07142f' --iconBackgroundColorDark '#07142f' --splashBackgroundColor '#07142f' --splashBackgroundColorDark '#07142f'",
+    "android:open": "npm run android:sync && cap open android",
+    "android:run": "npm run android:sync && cap run android",
+    "android:apk": "npm run android:sync && ./android/gradlew -p android assembleDebug",
+    "android:release": "npm run android:sync && ./android/gradlew -p android assembleRelease",
     "preview": "nuxt preview",
     "postinstall": "nuxt prepare",
-    "typecheck": "nuxt typecheck"
+    "typecheck": "nuxt typecheck",
+    "test": "vitest run"
   },
   "dependencies": {
+    "@capacitor/android": "^8.5.0",
+    "@capacitor/core": "^8.5.0",
+    "@capacitor/network": "^8.0.1",
+    "@capacitor/preferences": "^8.0.1",
     "@nuxt/ui": "^2.18.7",
-    "nuxt": "^3.13.2",
+    "nuxt": "^3.21.11",
     "vue": "^3.5.10",
     "vue-router": "^4.4.5"
   },
   "devDependencies": {
+    "@capacitor/assets": "^3.0.5",
+    "@capacitor/cli": "^8.5.0",
     "typescript": "^5.6.2",
+    "vitest": "^3.2.7",
     "vue-tsc": "^2.1.6"
   }
 }

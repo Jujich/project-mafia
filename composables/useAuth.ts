@@ -9,10 +9,17 @@ interface SessionResponse {
  * `useState` so the UI and route middleware can react to it.
  */
 export function useAuth() {
+  const config = useRuntimeConfig();
+  const localMode = Boolean(config.public.localGameMode);
   const loggedIn = useState<boolean>('auth:loggedIn', () => false);
   const login = useState<string | null>('auth:login', () => null);
 
   async function refresh(): Promise<boolean> {
+    if (localMode) {
+      loggedIn.value = true;
+      login.value = 'Локальный режим';
+      return true;
+    }
     try {
       // `useRequestFetch` forwards the incoming cookie during SSR so the
       // session check resolves correctly on a hard refresh / first load.
@@ -27,16 +34,25 @@ export function useAuth() {
   }
 
   async function signIn(credentials: { login: string; password: string }) {
-    const data = await $fetch<{ ok: boolean; login: string }>(
-      '/api/auth/login',
-      { method: 'POST', body: credentials },
-    );
+    if (localMode) {
+      loggedIn.value = true;
+      login.value = 'Локальный режим';
+      return { ok: true, login: login.value };
+    }
+    const data = (await $fetch('/api/auth/login', {
+      method: 'POST',
+      body: credentials,
+    })) as { ok: boolean; login: string };
     loggedIn.value = true;
     login.value = data.login;
     return data;
   }
 
   async function signOut() {
+    if (localMode) {
+      await navigateTo('/');
+      return;
+    }
     await $fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     loggedIn.value = false;
     login.value = null;

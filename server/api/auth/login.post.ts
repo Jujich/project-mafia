@@ -1,6 +1,6 @@
 export default defineEventHandler(async (event) => {
   const body = await readBody<{ login?: string; password?: string }>(event).catch(
-    () => ({}),
+    () => ({}) as { login?: string; password?: string },
   );
 
   const login = (body?.login ?? '').trim();

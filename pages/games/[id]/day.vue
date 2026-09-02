@@ -227,7 +227,7 @@ async function startNextNight() {
       />
 
       <!-- discussion timer -->
-      <DiscussionTimer :minutes="3" />
+      <DiscussionTimer :minutes="3" :storage-key="`${id}:${dayId}`" />
 
       <!-- nominations -->
       <UCard>
@@ -340,7 +340,7 @@ async function startNextNight() {
       <!-- elimination confirmation -->
       <UAlert
         v-if="state.elimination"
-        :color="state.elimination.eliminatedGamePlayerId ? 'red' : 'gray'"
+        :color="state.elimination.eliminatedGamePlayerId ? 'red' : 'primary'"
         variant="soft"
         icon="i-heroicons-information-circle"
         :title="

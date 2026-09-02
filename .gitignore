@@ -1,7 +1,16 @@
 node_modules
 .nuxt
 .output
+dist
 .data
 .env
 *.log
 .DS_Store
+.credentials/
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+*.apk
+*.aab
+*.idsig

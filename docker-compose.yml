@@ -16,6 +16,9 @@ services:
       # Where the Nitro server routes proxy to. Override via CI/CD variable if
       # the backend is reachable at a different address.
       NUXT_BACKEND_API_URL: ${NUXT_BACKEND_API_URL:-http://mafia-backend:3000}
+      # Same mobile-only credential as NestJS; injected at runtime, not baked
+      # into the web image or exposed in the web public runtime config.
+      NUXT_MOBILE_SYNC_TOKEN: ${MOBILE_SYNC_TOKEN:-}
       # Single-admin login gate. Provide via GitLab CI/CD variables (or a
       # .env file next to this compose on the host). Read at runtime by the
       # Nitro server.

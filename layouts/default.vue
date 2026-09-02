@@ -1,5 +1,22 @@
 <script setup lang="ts">
 const { signOut } = useAuth();
+const config = useRuntimeConfig();
+const localMode = computed(() => Boolean(config.public.localGameMode));
+const sync = useGameSync();
+
+const syncLabel = computed(() => {
+  if (sync.syncing.value) return 'Синхронизация…';
+  if (!sync.online.value) return `Офлайн · сохранено на телефоне`;
+  if (sync.pendingCount.value > 0) return `Ожидает отправки: ${sync.pendingCount.value}`;
+  if (sync.lastError.value) return 'Ошибка синхронизации';
+  return 'Данные синхронизированы';
+});
+
+const syncColor = computed(() => {
+  if (!sync.online.value || sync.lastError.value) return 'orange';
+  if (sync.pendingCount.value > 0 || sync.syncing.value) return 'gold';
+  return 'green';
+});
 
 const links = [
   { label: 'Главная', to: '/', icon: 'i-heroicons-home' },
@@ -50,6 +67,7 @@ const links = [
             <span class="sm:hidden">Игра</span>
           </UButton>
           <UButton
+            v-if="!localMode"
             icon="i-heroicons-arrow-left-start-on-rectangle"
             color="gray"
             variant="ghost"
@@ -59,6 +77,24 @@ const links = [
             @click="signOut"
           />
         </nav>
+      </div>
+      <div
+        v-if="localMode"
+        class="border-t border-bronze/15 bg-navy/70"
+      >
+        <div class="mx-auto w-full max-w-5xl px-4 py-1.5 flex items-center justify-end">
+          <UButton
+            :color="syncColor"
+            variant="ghost"
+            size="2xs"
+            :loading="sync.syncing.value"
+            :icon="sync.online.value ? 'i-heroicons-cloud' : 'i-heroicons-cloud-slash'"
+            :title="sync.lastError.value || 'Нажмите, чтобы повторить отправку'"
+            @click="sync.syncPending()"
+          >
+            {{ syncLabel }}
+          </UButton>
+        </div>
       </div>
     </header>
 

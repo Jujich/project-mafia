@@ -38,11 +38,11 @@ export const STATUS_LABELS: Record<GameStatus, string> = {
   FINISHED: 'Завершена',
 };
 
-export const STATUS_COLOR: Record<GameStatus, string> = {
+export const STATUS_COLOR = {
   SETUP: 'gray',
   IN_PROGRESS: 'green',
-  FINISHED: 'gold',
-};
+  FINISHED: 'primary',
+} as const satisfies Record<GameStatus, 'gray' | 'green' | 'primary'>;
 
 export const PHASE_LABELS: Record<GamePhase, string> = {
   SETUP: 'Подготовка',

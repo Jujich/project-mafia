@@ -22,7 +22,7 @@ export async function proxyToBackend<T = unknown>(event: H3Event): Promise<T> {
   }
 
   try {
-    return await $fetch<T>(`${base}${path}`, init);
+    return (await $fetch(`${base}${path}`, init)) as T;
   } catch (err: any) {
     const statusCode = err?.statusCode || err?.response?.status || 502;
     const data = err?.data;

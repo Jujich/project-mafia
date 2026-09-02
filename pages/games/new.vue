@@ -406,7 +406,7 @@ function back() {
                   >опц.</UBadge
                 >
               </span>
-              <UToggle v-model="toggles[s.key]" color="gold" />
+              <UToggle v-model="toggles[s.key]" color="primary" />
             </label>
           </div>
         </div>

@@ -22,10 +22,14 @@ function extractMessage(err: any): string {
 
 export function useGameApi() {
   const toast = useToast();
+  const config = useRuntimeConfig();
+  const localMode = Boolean(config.public.localGameMode);
+  const local = useOfflineGameRepository();
+  const sync = useGameSync();
 
-  async function call<T>(url: string, opts: any = {}): Promise<T> {
+  async function execute<T>(request: () => Promise<T>): Promise<T> {
     try {
-      return await $fetch<T>(url, opts);
+      return await request();
     } catch (err: any) {
       const status = err?.statusCode || err?.response?.status;
       if (status === 401) {
@@ -44,23 +48,38 @@ export function useGameApi() {
     }
   }
 
+  async function call<T>(url: string, opts: any = {}): Promise<T> {
+    return execute(() => $fetch(url, opts) as Promise<T>);
+  }
+
+  async function localMutation<T>(request: () => Promise<T>): Promise<T> {
+    const result = await execute(request);
+    void sync.syncPending();
+    return result;
+  }
+
   return {
     call,
 
-    createGame: (payload: CreateGamePayload) =>
-      call<Game>('/api/games', { method: 'POST', body: payload }),
+    createGame: (payload: CreateGamePayload) => localMode
+      ? localMutation(() => local.createGame(payload))
+      : call<Game>('/api/games', { method: 'POST', body: payload }),
 
-    startGame: (id: string) =>
-      call<Game>(`/api/games/${id}/start`, { method: 'PATCH' }),
+    startGame: (id: string) => localMode
+      ? localMutation(() => local.startGame(id))
+      : call<Game>(`/api/games/${id}/start`, { method: 'PATCH' }),
 
-    finishGame: (id: string, body: { winnerClan: string; comment?: string }) =>
-      call<Game>(`/api/games/${id}/finish`, { method: 'PATCH', body }),
+    finishGame: (id: string, body: { winnerClan: string; comment?: string }) => localMode
+      ? localMutation(() => local.finishGame(id, body))
+      : call<Game>(`/api/games/${id}/finish`, { method: 'PATCH', body }),
 
-    startNight: (id: string) =>
-      call<NightCurrent>(`/api/games/${id}/nights/start`, { method: 'POST' }),
+    startNight: (id: string) => localMode
+      ? localMutation(() => local.startNight(id))
+      : call<NightCurrent>(`/api/games/${id}/nights/start`, { method: 'POST' }),
 
-    getNightCurrent: (id: string) =>
-      call<NightCurrent>(`/api/games/${id}/nights/current`),
+    getNightCurrent: (id: string) => localMode
+      ? execute(() => local.getNightCurrent(id))
+      : call<NightCurrent>(`/api/games/${id}/nights/current`),
 
     saveNightAction: (
       id: string,
@@ -70,25 +89,30 @@ export function useGameApi() {
         targetGamePlayerId?: string | null;
         secondTargetGamePlayerId?: string | null;
       },
-    ) =>
-      call<SaveActionResponse>(
+    ) => localMode
+      ? localMutation(() => local.saveNightAction(id, nightId, body))
+      : call<SaveActionResponse>(
         `/api/games/${id}/nights/${nightId}/actions`,
         { method: 'POST', body },
       ),
 
-    completeNight: (id: string, nightId: string) =>
-      call<Game>(`/api/games/${id}/nights/${nightId}/complete`, {
+    completeNight: (id: string, nightId: string) => localMode
+      ? localMutation(() => local.completeNight(id, nightId))
+      : call<Game>(`/api/games/${id}/nights/${nightId}/complete`, {
         method: 'POST',
       }),
 
-    startDay: (id: string) =>
-      call<DayCurrent>(`/api/games/${id}/days/start`, { method: 'POST' }),
+    startDay: (id: string) => localMode
+      ? localMutation(() => local.startDay(id))
+      : call<DayCurrent>(`/api/games/${id}/days/start`, { method: 'POST' }),
 
-    getDayCurrent: (id: string) =>
-      call<DayCurrent>(`/api/games/${id}/days/current`),
+    getDayCurrent: (id: string) => localMode
+      ? execute(() => local.getDayCurrent(id))
+      : call<DayCurrent>(`/api/games/${id}/days/current`),
 
-    saveNominations: (id: string, dayId: string, nomineeGamePlayerIds: string[]) =>
-      call<DayCurrent>(`/api/games/${id}/days/${dayId}/nominations`, {
+    saveNominations: (id: string, dayId: string, nomineeGamePlayerIds: string[]) => localMode
+      ? localMutation(() => local.saveNominations(id, dayId, nomineeGamePlayerIds))
+      : call<DayCurrent>(`/api/games/${id}/days/${dayId}/nominations`, {
         method: 'POST',
         body: { nomineeGamePlayerIds },
       }),
@@ -97,13 +121,15 @@ export function useGameApi() {
       id: string,
       dayId: string,
       eliminatedGamePlayerId: string | null,
-    ) =>
-      call<DayCurrent>(`/api/games/${id}/days/${dayId}/eliminate`, {
+    ) => localMode
+      ? localMutation(() => local.eliminate(id, dayId, eliminatedGamePlayerId))
+      : call<DayCurrent>(`/api/games/${id}/days/${dayId}/eliminate`, {
         method: 'POST',
         body: { eliminatedGamePlayerId },
       }),
 
-    completeDay: (id: string, dayId: string) =>
-      call<Game>(`/api/games/${id}/days/${dayId}/complete`, { method: 'POST' }),
+    completeDay: (id: string, dayId: string) => localMode
+      ? localMutation(() => local.completeDay(id, dayId))
+      : call<Game>(`/api/games/${id}/days/${dayId}/complete`, { method: 'POST' }),
   };
 }

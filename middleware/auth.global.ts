@@ -7,6 +7,13 @@
  */
 export default defineNuxtRouteMiddleware(async (to) => {
   const { loggedIn, refresh } = useAuth();
+  const config = useRuntimeConfig();
+
+  if (config.public.localGameMode) {
+    await refresh();
+    if (to.path === '/login') return navigateTo('/');
+    return;
+  }
 
   if (import.meta.server) {
     await refresh();

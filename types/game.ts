@@ -69,6 +69,7 @@ export interface NightActionFull {
   id: string;
   actionType: NightActionType;
   actorRole: Role;
+  actorGamePlayerId?: string | null;
   targetGamePlayerId: string | null;
   secondTargetGamePlayerId: string | null;
   result: string | null;
@@ -84,11 +85,14 @@ export interface Night {
   status: 'IN_PROGRESS' | 'COMPLETED';
   summaryText: string | null;
   actions: NightActionFull[];
+  createdAt?: string;
+  completedAt?: string | null;
 }
 
 export interface VoteNomination {
   id: string;
   nomineeGamePlayerId: string;
+  order: number;
   nominee: GamePlayer;
 }
 
@@ -107,6 +111,8 @@ export interface Day {
   discussionEndedAt: string | null;
   nominations: VoteNomination[];
   elimination: DayElimination | null;
+  createdAt?: string;
+  completedAt?: string | null;
 }
 
 export interface Game {
@@ -126,6 +132,8 @@ export interface Game {
   doctorSelfHealUsed: boolean;
   createdAt: string;
   updatedAt: string;
+  /** Actual club-game time. Older server responses may not contain it. */
+  playedAt?: string;
   players: GamePlayer[];
   nights: Night[];
   days: Day[];
