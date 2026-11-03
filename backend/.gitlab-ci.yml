@@ -1,0 +1,23 @@
+# Deploys the backend directly on the GitLab runner that executes this pipeline.
+# Expectations for the runner (shell or docker executor with docker access):
+#   - docker + docker compose v2 available
+#   - the runner runs on the deployment host
+#
+# Add CI/CD variables in GitLab (Settings → CI/CD → Variables) to override
+# defaults if needed: POSTGRES_USER, POSTGRES_PASSWORD, POSTGRES_DB, BACKEND_PORT.
+
+stages:
+  - deploy
+
+deploy:
+  stage: deploy
+  # tags: [mafia]            # uncomment and set to target a specific runner
+  rules:
+    - if: '$CI_COMMIT_BRANCH == "main" || $CI_COMMIT_BRANCH == $CI_DEFAULT_BRANCH'
+  script:
+    - docker network create mafia-net || true
+    - docker compose pull postgres || true
+    - docker compose up -d --build
+    - docker image prune -f || true
+  environment:
+    name: production

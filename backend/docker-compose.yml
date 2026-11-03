@@ -1,0 +1,56 @@
+# Standalone compose for the BACKEND repository.
+# Brings up PostgreSQL + the NestJS API. Migrations are applied automatically
+# by the container entrypoint (prisma migrate deploy; stop on migration failure).
+#
+# The shared network `mafia-net` lets the separately-deployed frontend reach
+# this backend by container name (http://mafia-backend:3000). Create it once:
+#   docker network create mafia-net
+
+services:
+  postgres:
+    image: postgres:16-alpine
+    container_name: mafia-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-mafia}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-mafia}
+      POSTGRES_DB: ${POSTGRES_DB:-mafia}
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    # No host port published: the backend reaches PostgreSQL over the internal
+    # `mafia-net` network as `postgres:5432`. Uncomment only for local debugging.
+    # ports:
+    #   - '${POSTGRES_PORT:-5432}:5432'
+    networks:
+      - mafia-net
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U ${POSTGRES_USER:-mafia}']
+      interval: 5s
+      timeout: 5s
+      retries: 10
+
+  backend:
+    build:
+      context: .
+    image: mafia-backend:latest
+    container_name: mafia-backend
+    restart: unless-stopped
+    depends_on:
+      postgres:
+        condition: service_healthy
+    environment:
+      DATABASE_URL: postgresql://${POSTGRES_USER:-mafia}:${POSTGRES_PASSWORD:-mafia}@postgres:5432/${POSTGRES_DB:-mafia}?schema=public
+      PORT: 3000
+      MOBILE_SYNC_TOKEN: ${MOBILE_SYNC_TOKEN:-}
+    ports:
+      - '${BACKEND_PORT:-3000}:3000'
+    networks:
+      - mafia-net
+
+volumes:
+  pgdata:
+
+networks:
+  mafia-net:
+    name: mafia-net
+    external: true
