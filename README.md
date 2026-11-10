@@ -1,61 +1,92 @@
-# Деловая Мафия — панель ведущего
+# Delovaya Mafia — Game Host Dashboard
 
-Приложение для ведущего клубной игры «Мафия»: создание партии, назначение ролей, пошаговое проведение ночи и дня, голосование и сохранение результатов. Правила учитывают взаимодействия специальных ролей, лечение, иммунитеты и порядок ночных действий.
+[English](README.md) | [Русский](README.ru.md)
 
-Веб-версия защищена входом ведущего. Android-приложение работает автономно: хранит игры на устройстве и синхронизирует их с сервером при появлении сети.
+A web and Android tool for hosting in-person Mafia games with custom club rules. It guides the host through setup, role assignment, night actions, discussion, voting and game completion. The Android app keeps games on the device and can run without an internet connection.
 
-## Возможности
+## What it does
 
-- Проведение полного игрового цикла с подсказками ведущему и таймером обсуждения.
-- Расчёт результатов ночи и голосований по правилам клуба.
-- Работа на телефоне без интернета и сохранение незавершённой игры.
-- Идемпотентная синхронизация снимков игр с проверкой ревизий.
-- REST API с документацией Swagger и хранением данных в PostgreSQL.
+- A five-step game setup flow with role assignment and validation.
+- Guided night and day phases, including interactions between special roles, healing and immunity.
+- A discussion timer that recovers after the app returns from the background.
+- Local Android game storage and a retry queue for synchronization.
+- Revision-based, transactional import of game snapshots into PostgreSQL.
+- A web login for the host and a REST API documented with Swagger.
 
-## Архитектура
+This is a host's tool for an in-person game. Synchronization sends Android games to the server; it does not merge concurrent edits or restore server history onto a new device. The shared mobile token is an access barrier, not per-user authentication.
 
-| Каталог | Назначение | Технологии |
+## Architecture
+
+| Directory | Responsibility | Stack |
 | --- | --- | --- |
-| [`frontend/`](frontend) | Веб-панель, Nitro BFF и Android-приложение | Nuxt 3, Vue 3, TypeScript, NuxtUI, Capacitor 8 |
-| [`backend/`](backend) | Игровая логика, REST API и синхронизация | NestJS, Prisma, PostgreSQL |
+| [`frontend/`](frontend) | Web dashboard, Nitro API proxy and offline Android client | Nuxt 3, Vue 3, TypeScript, NuxtUI, Capacitor 8 |
+| [`backend/`](backend) | Game rules, REST API, snapshot validation and persistence | NestJS, Prisma, PostgreSQL |
 
-В браузере запросы проходят через Nitro BFF к backend. В Android игровой цикл выполняется локально, а синхронизация идёт через отдельный защищённый endpoint. Сервер принимает только более новые ревизии игры, поэтому повторная отправка не создаёт дубликаты.
+Browser requests pass through the authenticated Nitro proxy. The Android build runs a local game engine and sends snapshots through a separate token-protected Nitro endpoint. The backend accepts newer revisions in a single transaction; repeated submissions do not duplicate a game.
 
-Frontend и backend запускаются отдельно. У каждого компонента сохранены собственные Docker-конфигурация, GitLab CI и история коммитов.
+Implementation entry points:
 
-## Локальный запуск через Docker
+- [Night resolution](backend/src/nights/night-resolution.ts) and [night action order](backend/src/nights/night-steps.ts).
+- [Offline game engine](frontend/utils/offline-game-engine.ts) and [synchronization queue](frontend/utils/offline-sync-runner.ts).
+- [Snapshot validation](backend/src/sync/sync-snapshot.ts) and [transactional import](backend/src/sync/sync.service.ts).
 
-Потребуются Docker и Docker Compose.
+## Run locally
 
-1. Создайте локальные файлы окружения:
+Requirements: Node.js 22 or newer, npm and a running local PostgreSQL instance (PostgreSQL 16 was used for the project). The two components have separate dependencies.
 
-   ```bash
-   cp backend/.env.example backend/.env
-   cp frontend/.env.example frontend/.env
-   ```
+### 1. Prepare PostgreSQL and environment files
 
-2. В `frontend/.env` задайте `ADMIN_LOGIN` и `ADMIN_PASSWORD`. Для мобильной синхронизации добавьте одинаковый `MOBILE_SYNC_TOKEN` в оба файла `.env`: Docker Compose передаёт его frontend как `NUXT_MOBILE_SYNC_TOKEN`. Для локального запуска Nuxt без Docker используется непосредственно `NUXT_MOBILE_SYNC_TOKEN`. Секреты и ключи подписи не включаются в Git.
+Using a PostgreSQL administrator account, create a local role and database:
 
-3. Создайте общую сеть и запустите компоненты:
+```sh
+createuser --pwprompt mafia
+createdb --owner=mafia mafia
+cp backend/.env.example backend/.env
+cp frontend/.env.example frontend/.env
+```
 
-   ```bash
-   docker network create mafia-net
-   (cd backend && docker compose up -d --build)
-   (cd frontend && docker compose up -d --build)
-   ```
+Set `backend/.env` → `DATABASE_URL` to match that database and password, with `PORT=3000`. Set `frontend/.env` → `ADMIN_LOGIN` and `ADMIN_PASSWORD` to your local login credentials, and keep `NUXT_BACKEND_API_URL=http://localhost:3000`. Replace the example values before use. The `.env` files are ignored by Git.
 
-Веб-панель: `http://localhost:3001`. Backend и Swagger: `http://localhost:3000/api/docs`. Миграции базы применяются при запуске backend.
+For mobile synchronization, use the same separate random value for backend `MOBILE_SYNC_TOKEN`, frontend `NUXT_MOBILE_SYNC_TOKEN` and the Android build's `NUXT_PUBLIC_MOBILE_SYNC_TOKEN`. A web-only local setup does not require an Android build.
 
-## Разработка и Android
+### 2. Start the backend
 
-Подробные инструкции, переменные окружения и команды проверки:
+In one terminal, from the repository root:
 
-- [Frontend: Nuxt, офлайн-режим и сборка Android](frontend/README.md)
-- [Backend: API, игровая логика и миграции](backend/README.md)
-- [Установка Android-приложения](frontend/ANDROID-INSTALL.md)
+```sh
+cd backend
+npm ci
+npm run prisma:generate
+npm run prisma:deploy
+npm run start:dev
+```
 
-Для Android требуются Node.js 22, JDK 21 и Android SDK 36. Сборка запускается из `frontend/` командой `npm run android:apk`; выпуск подписанной версии описан в README frontend.
+`prisma:deploy` applies the checked-in database migrations; it does not publish the application. The API listens on port `3000`, with Swagger at `http://localhost:3000/api/docs`.
 
-## О репозитории
+### 3. Start the frontend
 
-Это объединённая GitHub-копия двух компонентов проекта для портфолио. Исходные репозитории GitLab сохраняются; их история включена в этот репозиторий. Локальные незакоммиченные изменения в копию не включены. Конфигурации GitLab CI сохранены в каталогах компонентов; автоматический деплой с GitHub не настроен.
+In another terminal, from the repository root:
+
+```sh
+cd frontend
+npm ci
+npm run dev -- --host 127.0.0.1 --port 3001
+```
+
+Open `http://localhost:3001` and sign in with the credentials from `frontend/.env`. The explicit frontend port avoids a conflict with the backend. The web login is enforced by Nitro, so keep direct backend access within your development environment.
+
+## Android
+
+The native build uses Node.js 22+, JDK 21 and Android SDK 36; the app targets Android 7.0 and newer. After installing frontend dependencies, `npm run android:apk` builds a debug APK from `frontend/`. Offline play is local; synchronization requires your own reachable HTTPS Nuxt endpoint and matching mobile tokens.
+
+See the [frontend guide](frontend/README.md) for Android build and signing commands, local storage and synchronization behavior. The [backend guide](backend/README.md) documents the API and migrations. Compiled APKs and signing keys are not included in this repository.
+
+## Development checks
+
+From `frontend/`: `npm test`, `npm run typecheck`, `npm run build`.
+
+From `backend/`: `npm test`, `npm run lint`, `npm run build`.
+
+## Repository scope
+
+This portfolio repository combines the frontend and backend with their source history. Server deployment configuration is maintained separately and is excluded from this GitHub copy. Application source, database migrations and Android build files are included.

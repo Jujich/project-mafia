@@ -1,0 +1,19 @@
+# Server deployment configuration is maintained outside this GitHub portfolio copy.
+.gitlab-ci.yml
+.gitlab/
+Dockerfile
+Dockerfile.*
+*.Dockerfile
+.dockerignore
+docker-compose*.yml
+docker-compose*.yaml
+compose.yml
+compose.yaml
+compose.*.yml
+compose.*.yaml
+docker-entrypoint.sh
+deploy/
+deployment/
+nginx/
+DEPLOYMENT*.md
+DEPLOY*.md
